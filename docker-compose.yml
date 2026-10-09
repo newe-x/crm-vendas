@@ -1,0 +1,19 @@
+services:
+  vendas:
+    build: .
+    image: crm-vendas
+    restart: unless-stopped
+    ports:
+      # Só na máquina local: o acesso externo passa pelo proxy reverso com HTTPS.
+      - "127.0.0.1:8000:8000"
+    environment:
+      # Primeiro usuário, criado só se o banco não tiver nenhum. Pode remover depois.
+      ADMIN_USER: ${ADMIN_USER:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      # IP do proxy reverso, como o container o vê (ver docs/deploy.md).
+      FORWARDED_ALLOW_IPS: ${FORWARDED_ALLOW_IPS:-127.0.0.1}
+    volumes:
+      - vendas-data:/data
+
+volumes:
+  vendas-data:

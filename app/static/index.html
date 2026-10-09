@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#18212E">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Vendas</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/static/icones/icone-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="/static/icones/icone-180.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body data-tela="carregando">
+
+  <!-- Login -->
+  <main class="login" id="login" hidden>
+    <form class="login-caixa" id="form-login" novalidate>
+      <h1>Vendas</h1>
+      <label class="campo">
+        <span>Usuário</span>
+        <input name="usuario" autocomplete="username" autocapitalize="none" required>
+      </label>
+      <label class="campo">
+        <span>Senha</span>
+        <input name="senha" type="password" autocomplete="current-password" required>
+      </label>
+      <p class="erro" role="alert" hidden></p>
+      <button type="submit" class="salvar">Entrar</button>
+    </form>
+  </main>
+
+  <div id="app" hidden>
+    <header class="topo">
+      <div class="topo-linha">
+        <h1 id="titulo">Início</h1>
+        <nav class="abas" aria-label="Telas">
+          <a href="#inicio" data-aba="inicio">Início</a>
+          <a href="#vendas" data-aba="vendas">Vendas</a>
+          <a href="#produtos" data-aba="produtos">Produtos</a>
+        </nav>
+        <nav class="mes so-vendas" aria-label="Período">
+          <button type="button" class="mes-seta" data-mes="-1" aria-label="Mês anterior">‹</button>
+          <button type="button" class="mes-nome" id="mes-nome" aria-label="Alternar entre mês e todas as vendas"></button>
+          <button type="button" class="mes-seta" data-mes="1" aria-label="Próximo mês">›</button>
+        </nav>
+        <button type="button" class="sair so-inicio" id="sair">Sair</button>
+      </div>
+
+      <p class="topo-data so-inicio" id="hoje"></p>
+
+      <dl class="resumo so-vendas">
+        <div><dt>Vendido</dt><dd id="r-vendido">–</dd></div>
+        <div><dt>Lucro</dt><dd id="r-lucro">–</dd></div>
+        <div><dt>Margem</dt><dd id="r-margem">–</dd></div>
+        <div><dt>A receber</dt><dd id="r-receber">–</dd></div>
+      </dl>
+    </header>
+
+    <!-- Início -->
+    <section class="tela" id="tela-inicio" aria-labelledby="titulo">
+      <div class="painel">
+        <div class="bloco bloco-lucro">
+          <h2>Lucro hoje</h2>
+          <p class="bloco-valor" id="p-lucro-dia">–</p>
+          <p class="bloco-nota" id="p-vendas-dia"></p>
+        </div>
+        <div class="bloco bloco-lucro">
+          <h2>Lucro do mês</h2>
+          <p class="bloco-valor" id="p-lucro-mes">–</p>
+          <p class="bloco-nota" id="p-vendas-mes"></p>
+        </div>
+        <a class="bloco" href="#vendas" data-filtro="a_receber">
+          <h2>A receber</h2>
+          <p class="bloco-valor" id="p-receber">–</p>
+          <p class="bloco-nota" id="p-receber-nota"></p>
+        </a>
+        <a class="bloco" href="#vendas" data-filtro="a_enviar">
+          <h2>A enviar</h2>
+          <p class="bloco-valor" id="p-enviar">–</p>
+          <p class="bloco-nota">vendas aguardando envio</p>
+        </a>
+        <div class="bloco">
+          <h2>Em estoque</h2>
+          <p class="bloco-valor" id="p-estoque-itens">–</p>
+          <p class="bloco-nota" id="p-estoque-produtos"></p>
+        </div>
+        <div class="bloco">
+          <h2>Valor do estoque</h2>
+          <p class="bloco-valor" id="p-estoque-valor">–</p>
+          <p class="bloco-nota">pelo custo das compras</p>
+        </div>
+      </div>
+
+      <div class="grupo" id="grupo-baixo" hidden>
+        <h3>Estoque acabando</h3>
+        <ul class="lista" id="lista-baixo"></ul>
+      </div>
+
+      <div class="grupo">
+        <h3>Últimas vendas</h3>
+        <ul class="lista" id="lista-recentes"></ul>
+        <p class="vazio" id="vazio-recentes" hidden>Nenhuma venda registrada ainda.</p>
+      </div>
+    </section>
+
+    <!-- Vendas -->
+    <section class="tela" id="tela-vendas" aria-labelledby="titulo" hidden>
+      <div class="filtros" role="radiogroup" aria-label="Filtrar vendas" id="filtros"></div>
+
+      <ul class="lista lista-vendas" id="lista-vendas"></ul>
+
+      <div class="tabela-wrap">
+        <table class="tabela" id="tabela">
+          <thead>
+            <tr>
+              <th>Cliente</th><th>Data venda</th><th>Produtos</th><th class="num">Itens</th>
+              <th class="num">Custo</th><th class="num">Valor vendido</th><th class="num">Taxa e frete</th>
+              <th class="num">Lucro</th><th>Pagamento</th><th>Entrega</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <p class="vazio" id="vazio-vendas" hidden></p>
+      <button type="button" class="mais" id="mais-vendas" hidden></button>
+      <p class="exportar"><a id="exportar" href="/api/vendas.csv">Exportar CSV deste período</a></p>
+    </section>
+
+    <!-- Produtos -->
+    <section class="tela" id="tela-produtos" aria-labelledby="titulo" hidden>
+      <div class="busca-fixa">
+        <input type="search" class="busca" id="busca-produtos" placeholder="Buscar produto" aria-label="Buscar produto" autocomplete="off">
+      </div>
+      <ul class="lista" id="lista-produtos"></ul>
+      <p class="vazio" id="vazio-produtos" hidden></p>
+    </section>
+
+    <button type="button" class="nova" id="nova">Nova venda</button>
+
+    <nav class="barra" aria-label="Telas">
+      <a href="#inicio" data-aba="inicio">Início</a>
+      <a href="#vendas" data-aba="vendas">Vendas</a>
+      <a href="#produtos" data-aba="produtos">Produtos</a>
+    </nav>
+  </div>
+
+  <!-- Campos de uma compra, usados no cadastro do produto e em "Registrar compra" -->
+  <template id="tpl-compra">
+    <div class="par">
+      <label class="campo">
+        <span>Data da compra</span>
+        <input name="data_compra" type="date" required>
+      </label>
+      <div class="campo">
+        <span data-rotulo="qtd">Quantidade</span>
+        <div class="passo" role="group">
+          <button type="button" data-passo="-1" aria-label="Diminuir quantidade">−</button>
+          <input name="qtd" type="number" inputmode="numeric" min="1" value="1" required>
+          <button type="button" data-passo="1" aria-label="Aumentar quantidade">+</button>
+        </div>
+      </div>
+    </div>
+
+    <fieldset class="campo">
+      <legend>Comprado em</legend>
+      <div class="segmentos">
+        <label><input type="radio" name="moeda" value="USD" checked><span>Dólar (US$)</span></label>
+        <label><input type="radio" name="moeda" value="BRL"><span>Real (R$)</span></label>
+      </div>
+    </fieldset>
+
+    <div class="par par-igual">
+      <label class="campo">
+        <span data-rotulo="preco">Preço por unidade (US$)</span>
+        <input name="preco_unit" inputmode="decimal" placeholder="0,00" required autocomplete="off">
+      </label>
+      <label class="campo" data-so-dolar>
+        <span>Câmbio (R$ por US$)</span>
+        <input name="cambio" inputmode="decimal" placeholder="5,40" autocomplete="off">
+      </label>
+    </div>
+
+    <p class="dica">Fretes e impostos: informe o total pago pela compra inteira.</p>
+    <div class="trio">
+      <label class="campo">
+        <span>Frete internacional</span>
+        <input name="frete_internacional" inputmode="decimal" placeholder="0,00" autocomplete="off">
+      </label>
+      <label class="campo">
+        <span>Impostos</span>
+        <input name="impostos" inputmode="decimal" placeholder="0,00" autocomplete="off">
+      </label>
+      <label class="campo">
+        <span>Frete até você</span>
+        <input name="frete_nacional" inputmode="decimal" placeholder="0,00" autocomplete="off">
+      </label>
+    </div>
+
+    <div class="composicao" data-composicao>
+      <p class="composicao-total"><span>Custo por unidade</span> <strong data-custo-unit>–</strong></p>
+      <div class="composicao-barra" aria-hidden="true"></div>
+      <ul class="composicao-legenda"></ul>
+    </div>
+  </template>
+
+  <!-- Folha: produto -->
+  <dialog class="folha" id="folha-produto" aria-labelledby="fp-titulo">
+    <form id="form-produto" novalidate>
+      <div class="folha-topo">
+        <h2 id="fp-titulo">Novo produto</h2>
+        <button type="button" class="fechar" aria-label="Fechar">×</button>
+      </div>
+
+      <div class="foto-campo">
+        <div class="foto-previa" id="fp-foto-previa"></div>
+        <div class="foto-acoes">
+          <label class="botao-sec">
+            <input type="file" accept="image/*" id="fp-foto" class="oculto">
+            <span id="fp-foto-rotulo">Adicionar foto</span>
+          </label>
+          <button type="button" class="botao-texto" id="fp-foto-remover" hidden>Remover foto</button>
+        </div>
+      </div>
+
+      <label class="campo">
+        <span>Produto</span>
+        <input name="nome" autocomplete="off" required maxlength="200">
+      </label>
+      <label class="campo">
+        <span>Observação</span>
+        <textarea name="observacao" rows="2" maxlength="2000" placeholder="Cor, tamanho, fornecedor, link…"></textarea>
+      </label>
+
+      <!-- Novo produto: primeira compra -->
+      <div id="fp-compra">
+        <h3 class="secao">Primeira compra</h3>
+      </div>
+
+      <!-- Produto existente: situação e compras -->
+      <div id="fp-detalhe" hidden>
+        <dl class="situacao">
+          <div><dt>Em estoque</dt><dd id="fp-estoque"></dd></div>
+          <div><dt>Custo atual</dt><dd id="fp-custo"></dd></div>
+        </dl>
+        <div class="faixas">
+          <p class="faixas-titulo">Preço sugerido por unidade</p>
+          <div class="faixas-grade" id="fp-faixas"></div>
+        </div>
+        <div class="secao-linha">
+          <h3 class="secao">Compras</h3>
+          <button type="button" class="botao-sec" id="fp-nova-compra">Registrar compra</button>
+        </div>
+        <ul class="lista lista-compras" id="fp-compras"></ul>
+      </div>
+
+      <p class="erro" role="alert" hidden></p>
+
+      <div class="acoes">
+        <button type="button" class="excluir" hidden>Excluir</button>
+        <button type="submit" class="salvar">Salvar produto</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Folha: compra -->
+  <dialog class="folha" id="folha-compra" aria-labelledby="fc-titulo">
+    <form id="form-compra" novalidate>
+      <div class="folha-topo">
+        <h2 id="fc-titulo">Registrar compra</h2>
+        <button type="button" class="fechar" aria-label="Fechar">×</button>
+      </div>
+      <p class="folha-sub" id="fc-produto"></p>
+      <div id="fc-campos"></div>
+      <p class="erro" role="alert" hidden></p>
+      <div class="acoes">
+        <button type="button" class="excluir" hidden>Excluir</button>
+        <button type="submit" class="salvar">Salvar compra</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Folha: venda -->
+  <dialog class="folha" id="folha-venda" aria-labelledby="fv-titulo">
+    <form id="form-venda" novalidate>
+      <div class="folha-topo">
+        <h2 id="fv-titulo">Nova venda</h2>
+        <button type="button" class="fechar" aria-label="Fechar">×</button>
+      </div>
+
+      <div id="fv-sem-produtos" class="aviso-vazio" hidden>
+        <p>Cadastre um produto antes de registrar a venda. É no cadastro que entram a compra, o custo e o estoque.</p>
+        <button type="button" class="salvar" id="fv-ir-produto">Cadastrar produto</button>
+      </div>
+
+      <div id="fv-campos">
+        <div class="par">
+          <label class="campo">
+            <span>Cliente</span>
+            <input name="cliente" autocomplete="off" required maxlength="120">
+          </label>
+          <label class="campo">
+            <span>Data da venda</span>
+            <input name="data_venda" type="date" required>
+          </label>
+        </div>
+
+        <h3 class="secao">Produtos</h3>
+        <ul class="itens" id="fv-itens"></ul>
+
+        <div class="busca-produto">
+          <input type="search" class="busca" id="fv-busca" placeholder="Buscar produto para adicionar"
+                 aria-label="Buscar produto para adicionar" autocomplete="off"
+                 role="combobox" aria-expanded="false" aria-controls="fv-resultados">
+          <ul class="resultados" id="fv-resultados" role="listbox" hidden></ul>
+        </div>
+
+        <h3 class="secao">Pagamento e custos da venda</h3>
+        <div class="par par-igual">
+          <label class="campo">
+            <span>Forma de pagamento</span>
+            <select name="forma_pagamento">
+              <option value="pix">Pix</option>
+              <option value="dinheiro">Dinheiro</option>
+              <option value="debito">Cartão de débito</option>
+              <option value="credito">Cartão de crédito</option>
+              <option value="link">Link de pagamento</option>
+              <option value="outro">Outro</option>
+            </select>
+          </label>
+          <label class="campo">
+            <span>Taxa (%)</span>
+            <input name="taxa_pct" inputmode="decimal" placeholder="0,00" autocomplete="off">
+          </label>
+        </div>
+        <div class="par par-igual">
+          <label class="campo">
+            <span>Frete pago por você</span>
+            <input name="frete" inputmode="decimal" placeholder="0,00" autocomplete="off">
+          </label>
+          <label class="campo">
+            <span>Desconto</span>
+            <input name="desconto" inputmode="decimal" placeholder="0,00" autocomplete="off">
+          </label>
+        </div>
+
+        <dl class="conta" id="fv-conta"></dl>
+
+        <fieldset class="campo">
+          <legend>Pagamento</legend>
+          <div class="segmentos">
+            <label><input type="radio" name="pagamento" value="pendente"><span>A receber</span></label>
+            <label><input type="radio" name="pagamento" value="pago"><span>Pago</span></label>
+          </div>
+        </fieldset>
+        <fieldset class="campo">
+          <legend>Entrega</legend>
+          <div class="segmentos">
+            <label><input type="radio" name="entrega" value="a_enviar"><span>A enviar</span></label>
+            <label><input type="radio" name="entrega" value="enviado"><span>Enviado</span></label>
+            <label><input type="radio" name="entrega" value="entregue"><span>Entregue</span></label>
+          </div>
+        </fieldset>
+        <label class="marcar" id="fv-cancelada-campo" hidden>
+          <input type="checkbox" name="cancelada">
+          <span>Venda cancelada (devolve os itens ao estoque e sai dos totais)</span>
+        </label>
+
+        <p class="erro" role="alert" hidden></p>
+
+        <div class="acoes">
+          <button type="button" class="excluir" hidden>Excluir</button>
+          <button type="submit" class="salvar">Salvar venda</button>
+        </div>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
